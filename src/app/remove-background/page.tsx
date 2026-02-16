@@ -10,6 +10,7 @@ export default function RemoveBgPage() {
     const [processing, setProcessing] = useState(false);
     const [result, setResult] = useState<{ url: string; name: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
     const handleRemoveBg = async () => {
         if (files.length === 0) return;
@@ -190,7 +191,8 @@ export default function RemoveBgPage() {
                                         <img
                                             src={result.url}
                                             alt="Result"
-                                            className="max-w-full max-h-full object-contain drop-shadow-2xl transition-transform duration-700 group-hover:scale-105"
+                                            onClick={() => setIsOverlayOpen(true)}
+                                            className="max-w-full max-h-full object-contain drop-shadow-2xl transition-transform duration-700 hover:scale-105 cursor-zoom-in"
                                         />
                                     </div>
                                 </div>
@@ -200,7 +202,43 @@ export default function RemoveBgPage() {
                 </AnimatePresence>
             </main>
 
+            {/* Image Overlay Modal */}
+            <AnimatePresence>
+                {isOverlayOpen && result && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsOverlayOpen(false)}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 cursor-zoom-out"
+                    >
+                        {/* Checkerboard background for transparency in modal */}
+                        <div className="absolute inset-0 opacity-[0.08] pointer-events-none -z-10" style={{
+                            backgroundImage: 'radial-gradient(#fff 20%, transparent 20%), radial-gradient(#fff 20%, transparent 20%)',
+                            backgroundPosition: '0 0, 10px 10px',
+                            backgroundSize: '20px 20px'
+                        }}></div>
 
+                        <motion.img
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            src={result.url}
+                            alt="Full size preview"
+                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                        <button
+                            onClick={() => setIsOverlayOpen(false)}
+                            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-2"
+                        >
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

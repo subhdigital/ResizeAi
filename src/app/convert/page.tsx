@@ -9,6 +9,7 @@ export default function ConvertPage() {
     const [targetFormat, setTargetFormat] = useState<'jpeg' | 'png' | 'webp' | 'avif'>('png');
     const [processing, setProcessing] = useState(false);
     const [result, setResult] = useState<{ url: string; format: string } | null>(null);
+    const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         // Maintain single file flow as per current logic
@@ -186,6 +187,18 @@ export default function ConvertPage() {
                         )}
                     </div>
 
+                    {/* Preview Result */}
+                    {result && (
+                        <div className="mt-8 mb-4 flex justify-center bg-slate-100/50 p-6 rounded-xl border border-dashed border-slate-200">
+                            <img
+                                src={result.url}
+                                alt="Converted preview"
+                                onClick={() => setIsOverlayOpen(true)}
+                                className="max-h-[300px] w-auto h-auto object-contain rounded-lg shadow-sm cursor-zoom-in hover:opacity-90 transition-opacity"
+                            />
+                        </div>
+                    )}
+
                     {/* Bottom Action Bar */}
                     <div className="mt-6 flex justify-start gap-4 z-10 border-t border-slate-200 pt-6">
                         {!result ? (
@@ -317,6 +330,37 @@ export default function ConvertPage() {
                     </section>
                 </div>
             </article>
+
+            {/* Image Overlay Modal */}
+            <AnimatePresence>
+                {isOverlayOpen && result && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsOverlayOpen(false)}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 cursor-zoom-out"
+                    >
+                        <motion.img
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            src={result.url}
+                            alt="Full size preview"
+                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                        <button
+                            onClick={() => setIsOverlayOpen(false)}
+                            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-2"
+                        >
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

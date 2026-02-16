@@ -60,7 +60,7 @@ export default function Navbar() {
                 {/* Brand */}
                 <Link href="/" className="flex items-center gap-2 group z-[1001]">
                     <span className="text-2xl font-black tracking-tight text-[#00d4ff]">
-                        Resize AI
+                        Resizely
                     </span>
                 </Link>
 

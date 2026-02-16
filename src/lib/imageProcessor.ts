@@ -79,9 +79,55 @@ export async function processImage(
 
     // 4. Watermark
     if (options.watermark) {
+        // Calculate current dimensions to ensure watermark fits
+        let currentW: number;
+        let currentH: number;
+
+        // Get initial dimensions (accounting for rotation)
+        const meta = await sharp(inputBuffer).rotate(options.rotate).metadata();
+        currentW = meta.width!;
+        currentH = meta.height!;
+
+        // Adjust for crop
+        if (options.crop) {
+            currentW = options.crop.width;
+            currentH = options.crop.height;
+        }
+
+        // Adjust for resize
+        if (options.width || options.height) {
+            if (options.width && options.height) {
+                currentW = options.width;
+                currentH = options.height;
+            } else if (options.width) {
+                // Maintain aspect ratio
+                currentH = Math.round(currentH * (options.width / currentW));
+                currentW = options.width;
+            } else if (options.height) {
+                // Maintain aspect ratio
+                currentW = Math.round(currentW * (options.height / currentH));
+                currentH = options.height;
+            }
+        }
+
+        // Resize watermark to fit within 50% of the image
+        // using 'inside' preserves aspect ratio of the watermark
+        // 'withoutEnlargement' prevents upscaling small watermarks
+        const constraintW = Math.max(1, Math.round(currentW * 0.5));
+        const constraintH = Math.max(1, Math.round(currentH * 0.5));
+
+        const resizedWatermark = await sharp(options.watermark.image)
+            .resize({
+                width: constraintW,
+                height: constraintH,
+                fit: 'inside',
+                withoutEnlargement: true
+            })
+            .toBuffer();
+
         pipeline = pipeline.composite([
             {
-                input: options.watermark.image,
+                input: resizedWatermark,
                 gravity: (options.watermark.gravity as any) || 'center',
                 blend: 'over'
             }
