@@ -1,0 +1,47 @@
+{
+  "name": "Resize",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@imgly/background-removal-node": "^1.4.5",
+    "@reduxjs/toolkit": "^2.11.2",
+    "@types/archiver": "^7.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "archiver": "^7.0.1",
+    "bcryptjs": "^3.0.3",
+    "framer-motion": "^12.34.0",
+    "ioredis": "^5.9.3",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.2.1",
+    "next": "16.1.6",
+    "next-auth": "^4.24.13",
+    "razorpay": "^2.9.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-dropzone": "^15.0.0",
+    "react-redux": "^9.2.0",
+    "redis": "^5.10.0",
+    "sass": "^1.97.3",
+    "server-only": "^0.0.1",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "node-loader": "^2.1.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
