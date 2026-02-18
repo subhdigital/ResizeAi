@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateImageFile, removeBackground } from '@/lib/imageProcessor';
-
-
+import { checkAndDeductCredits } from '@/lib/credits';
 
 export async function POST(req: NextRequest) {
     try {
+        // Enforce credit usage
+        const creditCheck = await checkAndDeductCredits(req, 'remove_background');
+        if (!creditCheck.success) {
+            return NextResponse.json(
+                { error: creditCheck.error || 'Insufficient credits. Please upgrade or wait for refill.' },
+                { status: 402 }
+            );
+        }
+
         const formData = await req.formData();
         const file = formData.get('image') as File;
 

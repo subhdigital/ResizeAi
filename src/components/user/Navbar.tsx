@@ -5,7 +5,9 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { logout } from '@/store/slices/authSlice';
+import { logoutUser } from '@/store/slices/authSlice';
+import { fetchCredits, selectCredits } from '@/store/slices/creditsSlice';
+import { ThunkDispatch } from '@reduxjs/toolkit';
 
 export default function Navbar() {
     const [scrolled, setScrolled] = useState(false);
@@ -14,8 +16,13 @@ export default function Navbar() {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     const pathname = usePathname();
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<ThunkDispatch<any, any, any>>();
     const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+    const credits = useSelector(selectCredits);
+
+    useEffect(() => {
+        dispatch(fetchCredits());
+    }, [dispatch]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -45,7 +52,7 @@ export default function Navbar() {
     };
 
     const handleLogout = () => {
-        dispatch(logout());
+        dispatch(logoutUser());
         setProfileDropdownOpen(false);
     };
 
@@ -190,6 +197,13 @@ export default function Navbar() {
                                         <span className="hidden lg:block absolute bottom-0 left-0 w-[2px] h-0 bg-[#00d4ff] transition-all duration-300 delay-300 group-hover:h-full"></span>
                                     </span>
                                 </Link>
+                            </li>
+
+                            {/* Credits Display */}
+                            <li className="flex items-center px-4 py-2">
+                                <span className={`text-sm font-bold px-3 py-1 rounded-full ${credits > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {credits} Credits
+                                </span>
                             </li>
 
                             {/* Standard Link - About */}

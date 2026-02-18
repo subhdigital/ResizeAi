@@ -4,6 +4,7 @@ import connectDB from '@/lib/db';
 import User from '@/models/User';
 
 async function handler(req: AuthenticatedRequest) {
+    // console.log('Handling /api/auth/me', req.user);
     try {
         if (!req.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +25,7 @@ async function handler(req: AuthenticatedRequest) {
                 plan: user.plan,
                 creditsRemaining: user.creditsRemaining,
                 apiKey: user.apiKey,
-                subscriptionStatus: user.subscriptionStatus,
+                subscriptionStatus: user.subscription?.status || 'inactive',
             },
         });
     } catch (error: any) {

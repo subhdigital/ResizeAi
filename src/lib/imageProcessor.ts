@@ -17,7 +17,10 @@ export interface ImageProcessingOptions {
         height: number;
     };
     watermark?: {
-        image: Buffer;
+        image?: Buffer;
+        text?: string;
+        textColor?: string;
+        textSize?: number; // 1-100 scale for relative size
         gravity?: string;
         opacity?: number;
     };
@@ -110,28 +113,111 @@ export async function processImage(
             }
         }
 
-        // Resize watermark to fit within 50% of the image
-        // using 'inside' preserves aspect ratio of the watermark
-        // 'withoutEnlargement' prevents upscaling small watermarks
-        const constraintW = Math.max(1, Math.round(currentW * 0.5));
-        const constraintH = Math.max(1, Math.round(currentH * 0.5));
+        let watermarkInput: Buffer;
 
-        const resizedWatermark = await sharp(options.watermark.image)
-            .resize({
-                width: constraintW,
-                height: constraintH,
-                fit: 'inside',
-                withoutEnlargement: true
-            })
-            .toBuffer();
+        if (options.watermark.text) {
+            // Text Watermark Logic
+            const text = options.watermark.text;
+            const sizePercent = options.watermark.textSize || 10; // Default 10% of height
+            const opacity = options.watermark.opacity || 0.8;
+            const color = options.watermark.textColor || 'rgba(255, 255, 255, 0.8)';
 
-        pipeline = pipeline.composite([
-            {
-                input: resizedWatermark,
-                gravity: (options.watermark.gravity as any) || 'center',
-                blend: 'over'
-            }
-        ]);
+            // Calculate font size
+            // Base logic: height * percentage / 100
+            const fontSize = Math.max(12, Math.round(currentH * (sizePercent / 100)));
+
+            // Construct SVG
+            const svg = `
+                <svg width="${currentW}" height="${currentH}">
+                    <style>
+                        .title { 
+                            fill: ${color}; 
+                            font-size: ${fontSize}px; 
+                            font-weight: bold; 
+                            font-family: sans-serif;
+                            opacity: ${opacity};
+                        }
+                    </style>
+                    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" class="title">${text}</text>
+                </svg>
+            `;
+
+            watermarkInput = Buffer.from(svg);
+
+            // Composite without resizing/gravity logic used for images
+            // We generated the SVG to match the image size, so we overlay it directly.
+            // Wait, if we use gravity 'center', we can just use the SVG as is if we centered the text.
+            // If user wants gravity 'north', our SVG has text at 50% 50%.
+            // Better approach: Make SVG size adaptable or rely on Sharp's gravity.
+            // Current SVG is full canvas. Gravity won't matter if input matches output size.
+            // If we want gravity support for text, we should generate an SVG of just the text dimensions? 
+            // Generating full canvas SVG with centered text is easiest for 'center'. 
+            // To support other gravities with Full Canvas SVG:
+            // We can change x/y in SVG based on gravity.
+
+            let textX = "50%";
+            let textY = "50%";
+            let textAnchor = "middle";
+            let dominantBaseline = "middle";
+
+            const g = (options.watermark.gravity || 'center').toLowerCase();
+
+            if (g.includes('west')) { textX = "5%"; textAnchor = "start"; }
+            if (g.includes('east')) { textX = "95%"; textAnchor = "end"; }
+            if (g.includes('north')) { textY = "5%"; dominantBaseline = "text-before-edge"; } // approximation
+            if (g.includes('south')) { textY = "95%"; dominantBaseline = "text-after-edge"; } // approximation
+
+            // Re-construct SVG with gravity awareness
+            const svgWithGravity = `
+                <svg width="${currentW}" height="${currentH}">
+                    <style>
+                        .text { 
+                            fill: ${color}; 
+                            font-size: ${fontSize}px; 
+                            font-weight: bold; 
+                            font-family: Arial, sans-serif;
+                            opacity: ${opacity};
+                            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
+                        }
+                    </style>
+                    <text x="${textX}" y="${textY}" text-anchor="${textAnchor}" dominant-baseline="${dominantBaseline}" class="text">${text}</text>
+                </svg>
+            `;
+
+            watermarkInput = Buffer.from(svgWithGravity);
+
+            pipeline = pipeline.composite([
+                {
+                    input: watermarkInput,
+                    // Gravity is handled effectively by the SVG positioning within the full canvas
+                    // But we can also just overlay it.
+                    blend: 'over'
+                }
+            ]);
+
+        } else if (options.watermark.image) {
+            // Image Watermark Logic (Existing)
+            // Resize watermark to fit within 50% of the image
+            const constraintW = Math.max(1, Math.round(currentW * 0.5));
+            const constraintH = Math.max(1, Math.round(currentH * 0.5));
+
+            const resizedWatermark = await sharp(options.watermark.image)
+                .resize({
+                    width: constraintW,
+                    height: constraintH,
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                .toBuffer();
+
+            pipeline = pipeline.composite([
+                {
+                    input: resizedWatermark,
+                    gravity: (options.watermark.gravity as any) || 'center',
+                    blend: 'over'
+                }
+            ]);
+        }
     }
 
     // 5. Format & Quality

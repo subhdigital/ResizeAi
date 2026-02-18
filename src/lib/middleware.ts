@@ -18,6 +18,14 @@ export function withAuth(
     return async (req: NextRequest) => {
         const token = getTokenFromRequest(req);
 
+        /*
+        console.log('Middleware Debug:', { 
+            url: req.url,
+            cookies: req.cookies.getAll().map(c => c.name),
+            hasToken: !!token 
+        });
+        */
+
         if (!token && requireAuth) {
             return NextResponse.json(
                 { error: 'Authentication required' },

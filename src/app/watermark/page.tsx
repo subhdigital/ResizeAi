@@ -4,23 +4,44 @@ import { useState } from 'react';
 import Navbar from '@/components/user/Navbar';
 import FileUpload from '@/components/common/FileUpload';
 import { motion, AnimatePresence } from 'framer-motion';
+import CreditExhaustedModal from '@/components/modals/CreditExhaustedModal';
 
 export default function WatermarkPage() {
     const [mainImage, setMainImage] = useState<File | null>(null);
-    const [watermark, setWatermark] = useState<File | null>(null);
+    const [watermarkType, setWatermarkType] = useState<'text' | 'image'>('text');
+    const [watermarkImage, setWatermarkImage] = useState<File | null>(null);
+
+    // Text Watermark State
+    const [text, setText] = useState('');
+    const [textColor, setTextColor] = useState('#ffffff');
+    const [textSize, setTextSize] = useState(10);
+    const [opacity, setOpacity] = useState(0.8);
+
     const [position, setPosition] = useState('center');
     const [processing, setProcessing] = useState(false);
     const [result, setResult] = useState<{ url: string } | null>(null);
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+    const [showCreditModal, setShowCreditModal] = useState(false);
 
     const handleWatermark = async () => {
-        if (!mainImage || !watermark) return;
+        if (!mainImage) return;
+        if (watermarkType === 'image' && !watermarkImage) return;
+        if (watermarkType === 'text' && !text) return;
 
         setProcessing(true);
         const formData = new FormData();
         formData.append('image', mainImage);
-        formData.append('watermark', watermark);
+        formData.append('type', watermarkType);
         formData.append('gravity', position);
+
+        if (watermarkType === 'text') {
+            formData.append('text', text);
+            formData.append('textColor', textColor);
+            formData.append('textSize', textSize.toString());
+            formData.append('opacity', opacity.toString());
+        } else {
+            formData.append('watermark', watermarkImage!);
+        }
 
         try {
             const res = await fetch('/api/process/watermark', {
@@ -28,14 +49,23 @@ export default function WatermarkPage() {
                 body: formData,
             });
 
-            if (!res.ok) throw new Error('Failed to process image');
+            if (!res.ok) {
+                // Check if error is due to insufficient credits
+                if (res.status === 402) {
+                    setShowCreditModal(true);
+                    throw new Error('Insufficient credits');
+                }
+                throw new Error('Failed to process image');
+            }
 
             const blob = await res.blob();
             const downloadUrl = URL.createObjectURL(blob);
             setResult({ url: downloadUrl });
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('Error processing image');
+            if (error.message !== 'Insufficient credits') {
+                alert('Error processing image');
+            }
         } finally {
             setProcessing(false);
         }
@@ -43,7 +73,10 @@ export default function WatermarkPage() {
 
     return (
         <div className="min-h-screen bg-white font-sans">
-
+            <CreditExhaustedModal
+                isOpen={showCreditModal}
+                onClose={() => setShowCreditModal(false)}
+            />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 mt-6">
                 <div className="max-w-4xl mx-auto mb-16 text-center">
@@ -77,15 +110,89 @@ export default function WatermarkPage() {
                                     </div>
                                     <FileUpload onFilesSelected={(files) => setMainImage(files[0])} maxFiles={1} />
                                 </div>
-                                <div className="bg-white p-2 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.05)] border border-slate-100">
-                                    <div className="text-center p-4">
+
+                                <div className="bg-white p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.05)] border border-slate-100 flex flex-col">
+                                    <div className="text-center p-4 mb-4">
                                         <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest mb-2">2. Watermark</h3>
                                     </div>
-                                    <FileUpload onFilesSelected={(files) => setWatermark(files[0])} maxFiles={1} title="Select Watermark" />
+
+                                    <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+                                        <button
+                                            onClick={() => setWatermarkType('text')}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${watermarkType === 'text' ? 'bg-white shadow-sm text-blue-600 border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            Text
+                                        </button>
+                                        <button
+                                            onClick={() => setWatermarkType('image')}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${watermarkType === 'image' ? 'bg-white shadow-sm text-blue-600 border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            Image
+                                        </button>
+                                    </div>
+
+                                    <div className="flex-1">
+                                        {watermarkType === 'image' ? (
+                                            <FileUpload onFilesSelected={(files) => setWatermarkImage(files[0])} maxFiles={1} title="Select Watermark Image" />
+                                        ) : (
+                                            <div className="space-y-6 px-2">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black uppercase text-slate-400 tracking-wider">Content</label>
+                                                    <input
+                                                        type="text"
+                                                        value={text}
+                                                        onChange={(e) => setText(e.target.value)}
+                                                        placeholder="Enter watermark text..."
+                                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-black uppercase text-slate-400 tracking-wider">Color</label>
+                                                        <div className="flex items-center space-x-2">
+                                                            <input
+                                                                type="color"
+                                                                value={textColor}
+                                                                onChange={(e) => setTextColor(e.target.value)}
+                                                                className="h-10 w-10 rounded-lg cursor-pointer border-0 p-0"
+                                                            />
+                                                            <span className="text-sm font-medium text-slate-600">{textColor}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-black uppercase text-slate-400 tracking-wider">Size ({textSize}%)</label>
+                                                        <input
+                                                            type="range"
+                                                            min="1"
+                                                            max="50"
+                                                            value={textSize}
+                                                            onChange={(e) => setTextSize(parseInt(e.target.value))}
+                                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black uppercase text-slate-400 tracking-wider">Opacity ({Math.round(opacity * 100)}%)</label>
+                                                    <input
+                                                        type="range"
+                                                        min="0.1"
+                                                        max="1"
+                                                        step="0.1"
+                                                        value={opacity}
+                                                        onChange={(e) => setOpacity(parseFloat(e.target.value))}
+                                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {(mainImage && watermark) && (
+                            {/* Only show controls if valid inputs are present */}
+                            {(mainImage && (watermarkType === 'text' ? text : watermarkImage)) && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -160,7 +267,7 @@ export default function WatermarkPage() {
                                 </a>
                             </div>
                             <button
-                                onClick={() => { setResult(null); setMainImage(null); setWatermark(null); }}
+                                onClick={() => { setResult(null); setMainImage(null); setWatermarkImage(null); setText(''); }}
                                 className="px-8 py-4 text-slate-500 font-bold hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all"
                             >
                                 ← Protect another

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import { generateToken, generateApiKey } from '@/lib/auth';
+import { getConfig } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
     try {
@@ -29,15 +30,18 @@ export async function POST(request: NextRequest) {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
+        // Get global config for credits
+        const config = await getConfig();
+
         // Create user
         const user = await User.create({
             name,
             email,
             password: hashedPassword,
             plan: 'free',
-            creditsRemaining: parseInt(process.env.FREE_PLAN_CREDITS || '10'),
+            creditsRemaining: config.registeredDefaultCredits,
             apiKey: generateApiKey(),
-            subscriptionStatus: 'active',
+            subscription: { status: 'active' },
         });
 
         // Generate token

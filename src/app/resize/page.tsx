@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Navbar from '@/components/user/Navbar';
 import FileUpload from '@/components/common/FileUpload';
 import { motion, AnimatePresence } from 'framer-motion';
+import CreditExhaustedModal from '@/components/modals/CreditExhaustedModal';
 
 export default function ResizePage() {
     const [files, setFiles] = useState<File[]>([]);
@@ -12,6 +13,7 @@ export default function ResizePage() {
     const [processing, setProcessing] = useState(false);
     const [result, setResult] = useState<{ url: string } | null>(null);
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+    const [showCreditModal, setShowCreditModal] = useState(false);
 
     const handleResize = async () => {
         if (files.length === 0 || (!width && !height)) return;
@@ -28,14 +30,27 @@ export default function ResizePage() {
                 body: formData,
             });
 
-            if (!res.ok) throw new Error('Failed to process image');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+
+                // Check if error is due to insufficient credits
+                if (res.status === 402) {
+                    setShowCreditModal(true);
+                    throw new Error('Insufficient credits');
+                }
+
+                throw new Error(errorData.error || 'Failed to process image');
+            }
 
             const blob = await res.blob();
             const downloadUrl = URL.createObjectURL(blob);
             setResult({ url: downloadUrl });
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('Error processing image');
+            // Don't alert if it's the credit error, as the modal will show
+            if (error.message !== 'Insufficient credits') {
+                alert(error.message || 'Error processing image');
+            }
         } finally {
             setProcessing(false);
         }
@@ -43,7 +58,10 @@ export default function ResizePage() {
 
     return (
         <div className="min-h-screen bg-white font-sans">
-
+            <CreditExhaustedModal
+                isOpen={showCreditModal}
+                onClose={() => setShowCreditModal(false)}
+            />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 mt-6">
                 <div className="max-w-4xl mx-auto mb-16 text-center">

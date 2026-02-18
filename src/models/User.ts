@@ -4,13 +4,25 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password?: string;
+    role: 'user' | 'admin';
     plan: 'free' | 'pro' | 'enterprise';
     creditsRemaining: number;
     apiKey: string;
-    subscriptionStatus: 'active' | 'inactive' | 'cancelled';
-    subscriptionId?: string;
     googleId?: string;
     image?: string;
+
+    // Subscription Fields
+    subscription: {
+        id?: string; // Razorpay Subscription ID
+        customerId?: string; // Razorpay Customer ID
+        planId?: string; // Internal Plan ID (reference)
+        status: 'active' | 'authenticated' | 'expired' | 'halted' | 'cancelled' | 'pending' | 'created';
+        currentPeriodStart?: Date;
+        currentPeriodEnd?: Date;
+        nextBillingDate?: Date;
+        razorpayPlanId?: string;
+    };
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -31,6 +43,11 @@ const UserSchema: Schema<IUser> = new Schema(
             type: String,
             select: false,
         },
+        role: {
+            type: String,
+            enum: ['user', 'admin'],
+            default: 'user',
+        },
         plan: {
             type: String,
             enum: ['free', 'pro', 'enterprise'],
@@ -43,15 +60,7 @@ const UserSchema: Schema<IUser> = new Schema(
         apiKey: {
             type: String,
             unique: true,
-            required: true,
-        },
-        subscriptionStatus: {
-            type: String,
-            enum: ['active', 'inactive', 'cancelled'],
-            default: 'active',
-        },
-        subscriptionId: {
-            type: String,
+            sparse: true, // Allows null/undefined to be unique (if generated later)
         },
         googleId: {
             type: String,
@@ -60,6 +69,22 @@ const UserSchema: Schema<IUser> = new Schema(
         },
         image: {
             type: String,
+        },
+
+        // Subscription Embedded Object
+        subscription: {
+            id: String,
+            customerId: String,
+            planId: { type: Schema.Types.ObjectId, ref: 'Plan' },
+            status: {
+                type: String,
+                enum: ['active', 'authenticated', 'expired', 'halted', 'cancelled', 'pending', 'created'],
+                default: 'created'
+            },
+            currentPeriodStart: Date,
+            currentPeriodEnd: Date,
+            nextBillingDate: Date,
+            razorpayPlanId: String,
         },
     },
     {

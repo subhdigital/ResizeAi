@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processImage, validateImageFile } from '@/lib/imageProcessor';
+import { checkAndDeductCredits } from '@/lib/credits';
+import { getFingerprint } from '@/lib/fingerprint'; // Note: server-side, this won't work like client. checkAndDeductCredits handles reading header.
 
 export async function POST(req: NextRequest) {
+    // Check credits
+    const creditCheck = await checkAndDeductCredits(req, 'convert_image');
+    if (!creditCheck.success) {
+        return NextResponse.json(
+            { error: creditCheck.error || 'Insufficient credits. Please upgrade or wait for refill.' },
+            { status: 402 }
+        );
+    }
+
     try {
         const formData = await req.formData();
         const file = formData.get('image') as File;
@@ -29,3 +40,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }
+

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Navbar from '@/components/user/Navbar';
 import FileUpload from '@/components/common/FileUpload';
 import { motion, AnimatePresence } from 'framer-motion';
+import CreditExhaustedModal from '@/components/modals/CreditExhaustedModal';
 
 export default function CompressPage() {
     const [files, setFiles] = useState<File[]>([]);
@@ -11,6 +12,7 @@ export default function CompressPage() {
     const [processing, setProcessing] = useState(false);
     const [result, setResult] = useState<{ url: string; oldSize: number; newSize: number } | null>(null);
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+    const [showCreditModal, setShowCreditModal] = useState(false);
 
     const handleCompress = async () => {
         if (files.length === 0) return;
@@ -26,7 +28,14 @@ export default function CompressPage() {
                 body: formData,
             });
 
-            if (!res.ok) throw new Error('Failed to process image');
+            if (!res.ok) {
+                // Check if error is due to insufficient credits
+                if (res.status === 402) {
+                    setShowCreditModal(true);
+                    throw new Error('Insufficient credits');
+                }
+                throw new Error('Failed to process image');
+            }
 
             const blob = await res.blob();
             const downloadUrl = URL.createObjectURL(blob);
@@ -36,9 +45,11 @@ export default function CompressPage() {
                 oldSize: files[0].size,
                 newSize: blob.size,
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('Error processing image');
+            if (error.message !== 'Insufficient credits') {
+                alert('Error processing image');
+            }
         } finally {
             setProcessing(false);
         }
@@ -61,7 +72,10 @@ export default function CompressPage() {
 
     return (
         <div className="min-h-screen bg-white font-sans">
-
+            <CreditExhaustedModal
+                isOpen={showCreditModal}
+                onClose={() => setShowCreditModal(false)}
+            />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 mt-6">
                 <div className="max-w-4xl mx-auto mb-16 text-center">

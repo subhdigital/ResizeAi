@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 
 interface User {
     id: string;
@@ -41,16 +41,22 @@ const authSlice = createSlice({
                 state.user = { ...state.user, ...action.payload };
             }
         },
-        logout: (state) => {
-            state.user = null;
-            state.isAuthenticated = false;
-            state.loading = false;
-        },
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.loading = action.payload;
         },
     },
+    extraReducers: (builder) => {
+        builder.addCase(logoutUser.fulfilled, (state) => {
+            state.user = null;
+            state.isAuthenticated = false;
+            state.loading = false;
+        });
+    },
 });
 
-export const { setUser, updateCredits, updateUser, logout, setLoading } = authSlice.actions;
+export const logoutUser = createAsyncThunk('auth/logoutUser', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+});
+
+export const { setUser, updateCredits, updateUser, setLoading } = authSlice.actions;
 export default authSlice.reducer;

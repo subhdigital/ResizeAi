@@ -43,8 +43,8 @@ async function handler(req: AuthenticatedRequest) {
         await User.findByIdAndUpdate(req.user.userId, {
             plan,
             $inc: { creditsRemaining: credits },
-            subscriptionStatus: 'active',
-            subscriptionId: razorpay_payment_id,
+            'subscription.status': 'active',
+            'subscription.id': razorpay_payment_id,
         });
 
         return NextResponse.json({

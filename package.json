@@ -17,6 +17,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.3",
+    "crypto": "^1.0.1",
     "framer-motion": "^12.34.0",
     "ioredis": "^5.9.3",
     "jsonwebtoken": "^9.0.3",

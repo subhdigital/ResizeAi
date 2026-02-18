@@ -34,6 +34,14 @@ export const getTokenFromRequest = (request: NextRequest): string | null => {
         return authHeader.substring(7);
     }
 
+    // Debug log
+    console.log('Token Debug:', {
+        url: request.url,
+        cookies: request.cookies.getAll().map(c => c.name),
+        authHeader,
+        tokenFromCookie
+    });
+
     return null;
 };
 
