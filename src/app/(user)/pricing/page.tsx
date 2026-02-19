@@ -50,7 +50,7 @@ export default function PricingPage() {
             const options = {
                 key: data.keyId,
                 subscription_id: data.subscriptionId,
-                name: "ImageTools Premium",
+                name: "Resizely",
                 description: `Subscribe to ${data.planName}`,
                 handler: async function (response: any) {
                     try {

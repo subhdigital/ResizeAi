@@ -45,8 +45,7 @@ export async function POST(req: NextRequest) {
                 customerId = customer.id;
 
                 // Save customer ID immediately
-                user.subscription = user.subscription || {};
-                user.subscription.customerId = customerId;
+                user.subscription = { status: 'created', customerId: customerId };
                 await user.save();
             } catch (custError: any) {
                 console.error('Razorpay Customer Create Error:', custError);
@@ -59,8 +58,7 @@ export async function POST(req: NextRequest) {
                             customerId = customers.items[0].id;
 
                             // Save found customer ID
-                            user.subscription = user.subscription || {};
-                            user.subscription.customerId = customerId;
+                            user.subscription = { status: 'created', customerId: customerId };
                             await user.save();
                         } else {
                             throw new Error('Customer exists error but could not fetch by email');
@@ -81,27 +79,91 @@ export async function POST(req: NextRequest) {
         }
 
         // 4. Create Subscription
-        // Using 'any' cast to bypass strict typing issues with the library definition if necessary
-        const subscriptionOptions: any = {
-            plan_id: razorpayPlanId,
-            customer_id: customerId,
-            total_count: 120,
-            quantity: 1,
-            notes: {
-                userId: user._id.toString(),
-                planName: selectedPlan.name
+        try {
+            const subscriptionOptions: any = {
+                plan_id: razorpayPlanId,
+                customer_id: customerId,
+                total_count: 120, // 10 years
+                quantity: 1,
+                notes: {
+                    userId: user._id.toString(),
+                    planName: selectedPlan.name
+                }
+            };
+
+            const subscription: any = await razorpayInstance.subscriptions.create(subscriptionOptions);
+
+            return NextResponse.json({
+                subscriptionId: subscription.id,
+                keyId: process.env.RAZORPAY_KEY_ID,
+                planName: selectedPlan.name,
+                amount: selectedPlan.price,
+                currency: selectedPlan.currency
+            });
+        } catch (subError: any) {
+            console.error('Razorpay Subscription Error:', subError);
+
+            // If "id provided does not exist", it could be the plan_id OR customer_id
+            if (subError.error?.description?.includes('id provided does not exist')) {
+                // If we used a customerId, it might be stale/from a different environment
+                if (customerId) {
+                    console.log('Detected potentially invalid ID. Attempting to create a fresh customer...');
+
+                    try {
+                        // Force create a new customer
+                        const newCustomer = await razorpayInstance.customers.create({
+                            name: user.name,
+                            contact: '8948540760',
+                            email: `${Date.now()}_${user.email}`, // Slightly different email to avoid "already exists" if that was the block
+                            fail_existing: 0
+                        });
+
+                        const retryOptions: any = {
+                            plan_id: razorpayPlanId,
+                            customer_id: newCustomer.id,
+                            total_count: 120,
+                            quantity: 1,
+                            notes: {
+                                userId: user._id.toString(),
+                                planName: selectedPlan.name,
+                                retry: 'true'
+                            }
+                        };
+
+                        const retrySubscription: any = await razorpayInstance.subscriptions.create(retryOptions);
+
+                        // Update user with new customer ID
+                        if (!user.subscription) user.subscription = { status: 'created' };
+                        user.subscription.customerId = newCustomer.id;
+                        await user.save();
+
+                        return NextResponse.json({
+                            subscriptionId: retrySubscription.id,
+                            keyId: process.env.RAZORPAY_KEY_ID,
+                            planName: selectedPlan.name,
+                            amount: selectedPlan.price,
+                            currency: selectedPlan.currency
+                        });
+                    } catch (retryError: any) {
+                        console.error('Retry failed:', retryError);
+                        // If it still fails with "id provided does not exist", the PLAN ID is definitely wrong
+                        if (retryError.error?.description?.includes('id provided does not exist')) {
+                            return NextResponse.json({
+                                error: `The Razorpay Plan ID "${razorpayPlanId}" does not exist in your account. Please check your Razorpay Dashboard.`,
+                                details: retryError.error?.description
+                            }, { status: 400 });
+                        }
+                    }
+                }
+
+                return NextResponse.json({
+                    error: `Razorpay Plan ID "${razorpayPlanId}" not found. Verify you have created this plan in your Razorpay Dashboard.`,
+                    details: subError.error?.description
+                }, { status: 400 });
             }
-        };
 
-        const subscription = await razorpayInstance.subscriptions.create(subscriptionOptions);
-
-        return NextResponse.json({
-            subscriptionId: subscription.id,
-            keyId: process.env.RAZORPAY_KEY_ID,
-            planName: selectedPlan.name,
-            amount: selectedPlan.price,
-            currency: selectedPlan.currency
-        });
+            throw subError; // Rethrow to be caught by outer block
+        }
 
     } catch (error: any) {
         console.error('Subscription Creation Error:', error);

@@ -17,17 +17,15 @@ export const razorpay = () => {
 };
 
 export const plans = {
-    // Define plan IDs here or fetch from DB
-    // These should ideally match plans in your production Razorpay Dashboard
     PRO: {
-        id: 'plan_SHgrUiI8ULuAdV', // Generated automatically
+        id: process.env.RAZORPAY_PLAN_PRO || 'plan_SHgrUiI8ULuAdV',
         name: 'Pro',
         price: 499,
         currency: 'INR',
         description: '1000 Credits / Month',
     },
     ENTERPRISE: {
-        id: 'plan_SHgrVB4zKwijqr', // Generated automatically
+        id: process.env.RAZORPAY_PLAN_ENTERPRISE || 'plan_SHgrVB4zKwijqr',
         name: 'Enterprise',
         price: 1999,
         currency: 'INR',
