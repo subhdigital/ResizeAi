@@ -19,7 +19,7 @@ const AnonymousUserSchema: Schema<IAnonymousUser> = new Schema(
         },
         creditsRemaining: {
             type: Number,
-            default: 5, // Default, but should be set from config on creation
+            default: 10, // Default, but should be set from config on creation
         },
         fingerprint: {
             type: String,

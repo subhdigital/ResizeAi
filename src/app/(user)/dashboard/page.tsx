@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useDispatch } from 'react-redux';
+import { logoutUser } from '@/store/slices/authSlice';
 
 interface User {
     id: string;
@@ -45,14 +47,18 @@ export default function DashboardPage() {
         }
     };
 
+    const dispatch = useDispatch();
+
     const handleLogout = async () => {
         setLoggingOut(true);
         try {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            router.push('/login');
+            // @ts-ignore
+            await dispatch(logoutUser()).unwrap();
+            router.push('/');
             router.refresh();
         } catch (error) {
             console.error('Logout error:', error);
+            window.location.href = '/';
         }
     };
 

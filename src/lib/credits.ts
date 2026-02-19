@@ -17,10 +17,14 @@ export async function getConfig() {
     if (!config) {
         config = await GlobalConfig.create({
             key: 'credit_settings',
-            anonymousDefaultCredits: 5,
+            anonymousDefaultCredits: 10,
             registeredDefaultCredits: 10,
             subscriptionCredits: 100,
         });
+    } else if (config.anonymousDefaultCredits === 5) {
+        // Migration: Update old default to new default of 10
+        config.anonymousDefaultCredits = 10;
+        await config.save();
     }
     return config;
 }
@@ -46,12 +50,18 @@ export async function getOrInitAnonymousUser(deviceId: string, fingerprint?: str
             fingerprint,
         });
     } else {
+        // Daily Refresh Logic
+        const lastActive = new Date(anonUser.lastActive);
+        const today = new Date();
+        const isNewDay = lastActive.toDateString() !== today.toDateString();
+
+        if (isNewDay) {
+            const config = await getConfig();
+            anonUser.creditsRemaining = config.anonymousDefaultCredits;
+        }
+
         // Update last active
         anonUser.lastActive = new Date();
-        // If we found by fingerprint but deviceId was different (e.g. cleared cookies), 
-        // we might want to update the deviceId or keep the old one. 
-        // For simplicity, we keep the original record and return it.
-        // The calling API should probably update the client's cookie to match this record's deviceId.
         await anonUser.save();
     }
 

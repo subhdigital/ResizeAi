@@ -18,7 +18,7 @@ const GlobalConfigSchema: Schema<IGlobalConfig> = new Schema(
         },
         anonymousDefaultCredits: {
             type: Number,
-            default: 5,
+            default: 10,
         },
         registeredDefaultCredits: {
             type: Number,

@@ -1,24 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
-import { getTokenFromRequest, verifyToken } from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import { withAdmin, AuthenticatedRequest } from '@/lib/middleware';
 import { adjustCredits } from '@/lib/credits';
 
-async function checkAdmin(request: NextRequest) {
-    const token = getTokenFromRequest(request);
-    if (!token) return false;
-    const decoded = verifyToken(token);
-    if (!decoded) return false;
-    await connectDB();
-    const user = await User.findById(decoded.userId);
-    return user && user.role === 'admin';
-}
-
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    if (!await checkAdmin(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+async function handler(request: AuthenticatedRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
         const body = await request.json();
@@ -31,12 +15,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const newBalance = await adjustCredits(
             { userId: id },
             amount,
-            'admin_action', // Placeholder for actual admin ID if we want to extract it
+            request.user!.userId, // Log actual admin ID
             reason
         );
 
         return NextResponse.json({ success: true, newBalance });
     } catch (error: any) {
+        console.error('Adjust credits error:', error);
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const POST = withAdmin(handler as any);

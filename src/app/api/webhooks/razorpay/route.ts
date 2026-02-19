@@ -24,6 +24,9 @@ export async function POST(req: NextRequest) {
         const { payload, event: eventType } = event;
 
         // 2. Handle Events
+        // Webhooks disabled for initial flow per user request. 
+        // Note: Re-enable 'subscription.charged' for recurring renewal credits in production.
+        /*
         if (eventType === 'subscription.charged') {
             await handleSubscriptionCharged(payload);
         } else if (eventType === 'subscription.activated') {
@@ -31,6 +34,7 @@ export async function POST(req: NextRequest) {
         } else if (eventType === 'subscription.cancelled') {
             await handleSubscriptionCancelled(payload);
         }
+        */
         // Add other events if needed
 
         return NextResponse.json({ status: 'ok' });

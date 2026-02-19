@@ -1,44 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAdmin, AuthenticatedRequest } from '@/lib/middleware';
 import connectDB from '@/lib/db';
-import User from '@/models/User';
 import GlobalConfig from '@/models/GlobalConfig';
-import { getTokenFromRequest, verifyToken } from '@/lib/auth';
 
-// Helper to check admin access
-async function checkAdmin(request: NextRequest) {
-    const token = getTokenFromRequest(request);
-    if (!token) return false;
-
-    const decoded = verifyToken(token);
-    if (!decoded) return false;
-
-    await connectDB();
-    const user = await User.findById(decoded.userId);
-    return user && user.role === 'admin';
-}
-
-export async function GET(request: NextRequest) {
-    if (!await checkAdmin(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+async function getHandler(request: AuthenticatedRequest) {
     try {
+        await connectDB();
         const config = await GlobalConfig.findOne({ key: 'credit_settings' });
         return NextResponse.json(config || { error: 'Config not found' });
     } catch (error) {
+        console.error('Fetch global config error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
-export async function POST(request: NextRequest) {
-    if (!await checkAdmin(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+async function postHandler(request: AuthenticatedRequest) {
     try {
         const body = await request.json();
         const { anonymousDefaultCredits, registeredDefaultCredits, subscriptionCredits } = body;
 
+        await connectDB();
         let config = await GlobalConfig.findOne({ key: 'credit_settings' });
         if (!config) {
             config = new GlobalConfig({ key: 'credit_settings' });
@@ -51,6 +32,10 @@ export async function POST(request: NextRequest) {
         await config.save();
         return NextResponse.json({ success: true, config });
     } catch (error) {
+        console.error('Update global config error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const GET = withAdmin(getHandler);
+export const POST = withAdmin(postHandler);

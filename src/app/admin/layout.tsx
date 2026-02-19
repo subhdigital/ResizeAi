@@ -1,10 +1,14 @@
+'use client';
 
-import { Metadata } from "next";
-import Link from "next/link";
+import { usePathname } from "next/navigation";
+import AdminSidebar from "@/components/admin/AdminSidebar";
+import AdminHeader from "@/components/admin/AdminHeader";
+import "./admin.css";
 
-export const metadata: Metadata = {
-    title: "Admin Dashboard | AI Image Optimizer",
-    description: "Manage users, credits, and global settings",
+const pageTitles: Record<string, string> = {
+    '/admin': 'Dashboard Overview',
+    '/admin/users': 'User Management',
+    '/admin/credits': 'Global Configuration',
 };
 
 export default function AdminLayout({
@@ -12,34 +16,25 @@ export default function AdminLayout({
 }: {
     children: React.ReactNode;
 }) {
+    const pathname = usePathname();
+
+    // Do not show sidebar/header on login page
+    if (pathname === '/admin/login') {
+        return <div className="admin-login-layout">{children}</div>;
+    }
+
+    const currentTitle = pageTitles[pathname] || 'Admin Panel';
+
     return (
         <div className="admin-layout">
-            <aside className="admin-sidebar">
-                <div className="admin-sidebar__header">
-                    <h2 className="gradient-text">Admin Panel</h2>
-                </div>
-                <nav className="admin-sidebar__nav">
-                    <ul className="space-y-2">
-                        <li>
-                            <Link href="/admin" className="block py-2 px-4 hover:bg-gray-100 rounded">
-                                Dashboard
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/admin/users" className="block py-2 px-4 hover:bg-gray-100 rounded">
-                                Users & Credits
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/admin/credits" className="block py-2 px-4 hover:bg-gray-100 rounded">
-                                Global Config
-                            </Link>
-                        </li>
-                    </ul>
-                </nav>
-            </aside>
+            <AdminSidebar />
+
             <main className="admin-main">
-                {children}
+                <AdminHeader title={currentTitle} />
+
+                <div className="admin-content">
+                    {children}
+                </div>
             </main>
         </div>
     );

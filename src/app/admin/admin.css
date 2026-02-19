@@ -1,0 +1,114 @@
+/* Admin Dashboard Styles */
+
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-family: var(--font-inter), sans-serif;
+}
+
+.admin-sidebar {
+    width: 280px;
+    height: 100vh;
+    background-color: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    transition: all 0.3s ease;
+}
+
+.admin-sidebar__header {
+    padding: 2rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-sidebar__logo {
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.admin-sidebar__nav {
+    flex: 1;
+    padding: 1.5rem 1rem;
+}
+
+.admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #64748b;
+    transition: all 0.2s ease;
+}
+
+.admin-nav-item:hover {
+    background-color: #f1f5f9;
+    color: #2563eb;
+}
+
+.admin-nav-item--active {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+.admin-sidebar__footer {
+    padding: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.admin-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.admin-header {
+    height: 70px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.admin-content {
+    padding: 2rem;
+    flex: 1;
+}
+
+.admin-card {
+    background: #ffffff;
+    border-radius: 1.25rem;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #2563eb, #6366f1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.admin-login-layout {
+    min-height: 100vh;
+    background-color: #000;
+}

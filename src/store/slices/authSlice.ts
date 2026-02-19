@@ -7,6 +7,7 @@ interface User {
     plan: string;
     creditsRemaining: number;
     apiKey: string;
+    role: string;
     subscriptionStatus?: string;
 }
 

@@ -8,6 +8,46 @@ export interface AuthenticatedRequest extends NextRequest {
         userId: string;
         email: string;
         plan: string;
+        role: string;
+    };
+}
+
+/**
+ * Higher-order function to protect routes and ensure user has 'admin' role.
+ */
+export function withAdmin(
+    handler: (req: AuthenticatedRequest) => Promise<NextResponse>
+) {
+    return async (req: NextRequest) => {
+        const token = getTokenFromRequest(req);
+
+        if (!token) {
+            return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+        }
+
+        const payload = verifyToken(token);
+        if (!payload) {
+            return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+        }
+
+        if (payload.role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+        }
+
+        (req as AuthenticatedRequest).user = payload;
+
+        try {
+            return await handler(req as AuthenticatedRequest);
+        } catch (error: any) {
+            console.error('Admin middleware handler error:', error);
+            return NextResponse.json(
+                {
+                    error: 'Internal server error',
+                    message: error.message,
+                },
+                { status: 500 }
+            );
+        }
     };
 }
 

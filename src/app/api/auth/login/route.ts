@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
             userId: user._id.toString(),
             email: user.email,
             plan: user.plan,
+            role: user.role,
         });
 
         // Create response with user data
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
                 plan: user.plan,
                 creditsRemaining: user.creditsRemaining,
                 apiKey: user.apiKey,
+                role: user.role,
             },
         });
 

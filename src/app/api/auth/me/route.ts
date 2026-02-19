@@ -24,6 +24,7 @@ async function handler(req: AuthenticatedRequest) {
                 email: user.email,
                 plan: user.plan,
                 creditsRemaining: user.creditsRemaining,
+                role: user.role,
                 apiKey: user.apiKey,
                 subscriptionStatus: user.subscription?.status || 'inactive',
             },

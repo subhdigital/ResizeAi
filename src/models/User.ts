@@ -27,6 +27,21 @@ export interface IUser extends Document {
     updatedAt: Date;
 }
 
+const SubscriptionSchema = new Schema({
+    id: String,
+    customerId: String,
+    planId: String,
+    status: {
+        type: String,
+        enum: ['active', 'authenticated', 'expired', 'halted', 'cancelled', 'pending', 'created'],
+        default: 'created'
+    },
+    currentPeriodStart: Date,
+    currentPeriodEnd: Date,
+    nextBillingDate: Date,
+    razorpayPlanId: String,
+}, { _id: false });
+
 const UserSchema: Schema<IUser> = new Schema(
     {
         name: {
@@ -72,27 +87,17 @@ const UserSchema: Schema<IUser> = new Schema(
         },
 
         // Subscription Embedded Object
-        subscription: {
-            id: String,
-            customerId: String,
-            planId: { type: Schema.Types.ObjectId, ref: 'Plan' },
-            status: {
-                type: String,
-                enum: ['active', 'authenticated', 'expired', 'halted', 'cancelled', 'pending', 'created'],
-                default: 'created'
-            },
-            currentPeriodStart: Date,
-            currentPeriodEnd: Date,
-            nextBillingDate: Date,
-            razorpayPlanId: String,
-        },
+        subscription: SubscriptionSchema,
     },
     {
         timestamps: true,
     }
 );
 
-// Prevent model recompilation in development
+// Prevent model recompilation in development, but ensure schema updates are applied
+if (process.env.NODE_ENV === 'development') {
+    delete (mongoose.models as any).User;
+}
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
 export default User;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Script from 'next/script';
 import Navbar from '@/components/user/Navbar';
 
 
@@ -45,17 +46,39 @@ export default function PricingPage() {
             }
 
             // 2. Open Razorpay Checkout
+            // 2. Open Razorpay Checkout
             const options = {
                 key: data.keyId,
                 subscription_id: data.subscriptionId,
                 name: "ImageTools Premium",
                 description: `Subscribe to ${data.planName}`,
                 handler: async function (response: any) {
-                    // Success!
-                    // Razorpay sends payment_id, subscription_id, razorpay_signature
-                    alert('Subscription Successful! Payment ID: ' + response.razorpay_payment_id);
-                    // Ideally call backend to verify/sync immediately or wait for webhook
-                    window.location.href = '/dashboard';
+                    try {
+                        const verifyRes = await fetch('/api/subscription/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_subscription_id: response.razorpay_subscription_id,
+                                razorpay_signature: response.razorpay_signature,
+                                planId: planId // Send this so backend knows how many credits to give
+                            })
+                        });
+
+                        const verifyData = await verifyRes.json();
+
+                        if (verifyRes.ok) {
+                            alert('Subscription Verified! Credits added: ' + (verifyData.credits || 'Unknown'));
+                            window.location.href = '/dashboard';
+                        } else {
+                            alert('Payment successful but verification failed: ' + verifyData.error);
+                            // Still redirect to dashboard so they can verify if it worked or contact support
+                            window.location.href = '/dashboard';
+                        }
+                    } catch (err: any) {
+                        console.error(err);
+                        alert('Error verifying payment: ' + err.message);
+                    }
                 },
                 theme: {
                     color: "#00d4ff"
@@ -74,7 +97,7 @@ export default function PricingPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans">
-            <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" />
             <Navbar />
 
             <main className="max-w-7xl mx-auto px-4 py-20">

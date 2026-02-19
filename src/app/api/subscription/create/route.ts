@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
             try {
                 const customer = await razorpayInstance.customers.create({
                     name: user.name,
-                    contact: '9000090000', // Razorpay often requires a contact number. Using dummy for now as we don't collect phone.
+                    contact: '8948540760', // Razorpay often requires a contact number. Using dummy for now as we don't collect phone.
                     email: user.email,
                     fail_existing: 0
                 });
@@ -50,7 +50,33 @@ export async function POST(req: NextRequest) {
                 await user.save();
             } catch (custError: any) {
                 console.error('Razorpay Customer Create Error:', custError);
-                return NextResponse.json({ error: 'Failed to create payment customer' }, { status: 500 });
+
+                // Handle "Customer already exists" error
+                if (custError.error?.code === 'BAD_REQUEST_ERROR' && custError.error?.description?.includes('already exists')) {
+                    try {
+                        const customers: any = await razorpayInstance.customers.all({ email: user.email, count: 1 } as any);
+                        if (customers.items.length > 0) {
+                            customerId = customers.items[0].id;
+
+                            // Save found customer ID
+                            user.subscription = user.subscription || {};
+                            user.subscription.customerId = customerId;
+                            await user.save();
+                        } else {
+                            throw new Error('Customer exists error but could not fetch by email');
+                        }
+                    } catch (fetchError) {
+                        return NextResponse.json({
+                            error: 'Failed to retrieve existing payment customer',
+                            details: custError.error?.description
+                        }, { status: 500 });
+                    }
+                } else {
+                    return NextResponse.json({
+                        error: 'Failed to create payment customer',
+                        details: custError.error?.description || custError.message
+                    }, { status: 500 });
+                }
             }
         }
 
@@ -79,6 +105,13 @@ export async function POST(req: NextRequest) {
 
     } catch (error: any) {
         console.error('Subscription Creation Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        // More detailed error logging for debugging
+        if (error.error && error.error.description) {
+            console.error('Razorpay Error Description:', error.error.description);
+        }
+        return NextResponse.json({
+            error: error.message || 'Internal Server Error',
+            details: error.error?.description
+        }, { status: 500 });
     }
 }

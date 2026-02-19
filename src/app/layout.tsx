@@ -36,6 +36,8 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+import Analytics from "@/components/common/Analytics";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -45,24 +47,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} antialiased`}>
         <ReduxProvider>
-          <Navbar />
+          <Analytics />
           {children}
-          <Footer />
         </ReduxProvider>
       </body>
-      <Script
-        src="https://www.googletagmanager.com/gtag/js?id=G-ZX5ZCNX1W3"
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-
-          gtag('config', 'G-ZX5ZCNX1W3');
-        `}
-      </Script>
     </html>
   );
 }

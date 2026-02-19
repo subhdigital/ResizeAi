@@ -1,24 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAdmin, AuthenticatedRequest } from '@/lib/middleware';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
-import { getTokenFromRequest, verifyToken } from '@/lib/auth';
 
-async function checkAdmin(request: NextRequest) {
-    const token = getTokenFromRequest(request);
-    if (!token) return false;
-    const decoded = verifyToken(token);
-    if (!decoded) return false;
-    await connectDB();
-    const user = await User.findById(decoded.userId);
-    return user && user.role === 'admin';
-}
-
-export async function GET(request: NextRequest) {
-    if (!await checkAdmin(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+async function handler(request: AuthenticatedRequest) {
     try {
+        await connectDB();
         const url = new URL(request.url);
         const page = parseInt(url.searchParams.get('page') || '1');
         const limit = parseInt(url.searchParams.get('limit') || '20');
@@ -52,6 +39,9 @@ export async function GET(request: NextRequest) {
             },
         });
     } catch (error) {
+        console.error('All users fetch error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const GET = withAdmin(handler);
