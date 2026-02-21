@@ -33,23 +33,21 @@ export async function middleware(request: NextRequest) {
 
     // 1. Admin Routes Protection
     if (isAdminRoute) {
-        // If it's the admin login page and we're already an admin, go to dashboard
-        if (isAdminLoginPage && user?.role === 'admin') {
-            return NextResponse.redirect(new URL('/admin', request.url));
-        }
-
-        // If it's NOT the login page and we're not an admin, go to admin login
-        if (!isAdminLoginPage) {
-            if (!user || user.role !== 'admin') {
+        // A. If already an admin
+        if (user?.role === 'admin') {
+            // Already admin, but trying to hit the login page again -> send to admin dashboard
+            if (isAdminLoginPage) {
+                return NextResponse.redirect(new URL('/admin', request.url));
+            }
+            // Otherwise, they are an admin hitting a normal admin route, let them pass
+        } else {
+            // B. If NOT an admin (either logged out, or a regular user)
+            if (!isAdminLoginPage) {
+                // Hitting a protected admin route -> force to admin login
                 const loginUrl = new URL('/admin/login', request.url);
-                if (pathname !== '/admin') loginUrl.searchParams.set('redirect', pathname);
                 return NextResponse.redirect(loginUrl);
             }
-        }
-
-        // If we are logged in but not as admin, and trying to access admin pages
-        if (user && user.role !== 'admin' && !isAdminLoginPage) {
-            return NextResponse.redirect(new URL('/dashboard', request.url));
+            // If they ARE hitting the login page, let them pass so they can actually log in
         }
     }
 

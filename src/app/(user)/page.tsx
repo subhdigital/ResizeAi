@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Navbar from '@/components/user/Navbar';
 
 interface Tool {
@@ -265,10 +266,13 @@ export default function Home() {
                 <div className="p-6">
                   {/* Image Placeholder */}
                   <div className="bg-slate-800 rounded-lg aspect-video mb-6 relative overflow-hidden group shadow-inner">
-                    <img
+                    <Image
                       src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800"
-                      alt="Editor preview"
-                      className="w-full h-full object-cover opacity-80"
+                      alt="Editor preview showing image cropping interface"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover opacity-80"
+                      loading="lazy"
                     />
                     {/* Crop Overlay Lines */}
                     <div className="absolute inset-4 border-2 border-white/50 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">

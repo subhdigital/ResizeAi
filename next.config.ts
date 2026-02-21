@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true, // Note: This might be 'experimental.reactCompiler' depending on version, keeping as is
   serverExternalPackages: ["@imgly/background-removal-node", "sharp"],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
+  },
   webpack: (config, { isServer }) => {
     config.module.rules.push({
       test: /\.node$/,
